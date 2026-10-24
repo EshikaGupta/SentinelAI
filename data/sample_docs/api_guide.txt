@@ -1,0 +1,17 @@
+
+# API Security Guide
+
+## Authentication
+All API requests must include a valid bearer token in the Authorization header. Requests without a valid token receive a 401 Unauthorized response.
+
+## Rate Limiting
+The API allows a maximum of 100 requests per minute per user. Requests exceeding this limit receive a 429 Too Many Requests response.
+
+## Timeouts
+The default API request timeout is 30 seconds. Clients should implement reasonable retry policies for transient failures.
+
+## Error Handling
+A 400 response indicates an invalid request. A 401 response indicates missing or invalid authentication. A 429 response indicates that the rate limit has been exceeded. A 500 response indicates an internal server error.
+
+## Logging
+API logs must not contain bearer tokens, passwords, or other sensitive authentication credentials.

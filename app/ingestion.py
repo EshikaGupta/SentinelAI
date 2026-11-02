@@ -1,6 +1,6 @@
-
 from pathlib import Path
 
+from pypdf import PdfReader
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
@@ -9,10 +9,11 @@ DOCUMENT_PATH = PROJECT_ROOT / "data" / "sample_docs" / "api_guide.txt"
 
 CHUNK_SIZE = 200
 CHUNK_OVERLAP = 50
+SUPPORTED_EXTENSIONS = {".txt", ".md", ".pdf"}
 
 
 def load_document(path: Path) -> str:
-    """Read a UTF-8 text document."""
+    """Read a UTF-8 text/Markdown file or extract text from a PDF."""
     path = Path(path).resolve()
 
     if not path.exists():
@@ -21,10 +22,23 @@ def load_document(path: Path) -> str:
     if not path.is_file():
         raise ValueError(f"Expected a file, got: {path}")
 
-    text = path.read_text(encoding="utf-8")
+    extension = path.suffix.lower()
+    if extension not in SUPPORTED_EXTENSIONS:
+        raise ValueError(
+            f"Unsupported file type: {extension}. Supported: .txt, .md, .pdf"
+        )
+
+    if extension == ".pdf":
+        reader = PdfReader(str(path))
+        text = "\n".join(page.extract_text() or "" for page in reader.pages)
+    else:
+        text = path.read_text(encoding="utf-8")
 
     if not text.strip():
-        raise ValueError(f"Document is empty: {path}")
+        raise ValueError(
+            f"No extractable text found in document: {path}. "
+            "Scanned PDFs may require OCR."
+        )
 
     return text
 
@@ -58,10 +72,7 @@ def split_document(
 
 if __name__ == "__main__":
     text = load_document(DOCUMENT_PATH)
-    chunks = split_document(
-        text,
-        source=str(DOCUMENT_PATH.resolve()),
-    )
+    chunks = split_document(text, source=str(DOCUMENT_PATH.resolve()))
 
     print(f"Loaded document: {DOCUMENT_PATH}")
     print(f"Generated {len(chunks)} chunks.")

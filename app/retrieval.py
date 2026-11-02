@@ -8,10 +8,11 @@ from langchain_core.documents import Document
 from langchain_community.retrievers import BM25Retriever
 from sentence_transformers import CrossEncoder
 
-from app.vector_store import Chroma
+from .vector_store import Chroma
 
 logger = logging.getLogger(__name__)
 
+MIN_RERANK_SCORE = 0.0
 DENSE_K = 10
 SPARSE_K = 10
 RERANK_TOP_K = 5
@@ -84,8 +85,6 @@ def document_key(document: Document) -> str:
     raw_key = f"{source}\n{content}"
 
     return hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
-
-from langsmith import traceable
 
 @traceable(name="BM25 Retrieval",run_type="retriever")
 def run_bm25(bm25, query):
@@ -184,23 +183,7 @@ def hybrid_retrieve(
 
     # 3. Reciprocal Rank Fusion.
     # Each result contributes 1 / (constant + rank).
-    # fused_scores = {}
-    # documents_by_key = {}
-
-    # for results in (dense_results, sparse_results):
-    #     for rank, document in enumerate(results, start=1):
-    #         key = document_key(document)
-    #         documents_by_key[key] = document
-    #         fused_scores[key] = (
-    #             fused_scores.get(key, 0.0)
-    #             + 1.0 / (RRF_CONSTANT + rank)
-    #         )
-
-    # ranked_keys = sorted(
-    #     fused_scores,
-    #     key=fused_scores.get,
-    #     reverse=True,
-    # )
+    
     candidates = fuse_rankings(
         dense_results=dense_results,
         sparse_results=sparse_results,
@@ -288,7 +271,9 @@ def retrieve_and_rerank(
         documents=candidates,
         top_k=top_k,
     )
-    # print("AFTER RERANKING:")
-    # for doc in results:
-    #     print(doc.metadata)
-    return results
+    relevant_results = [
+        doc for doc in results
+        if doc.metadata.get("rerank_score", float("-inf")) >= MIN_RERANK_SCORE
+    ]
+
+    return relevant_results

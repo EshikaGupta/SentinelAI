@@ -6,6 +6,7 @@ from .vector_store import index_directory
 from .graph import answer_question
 import logging
 import uuid
+from .monitoring import get_metrics
 
 app = FastAPI(title="SentinelAI API")
 
@@ -27,6 +28,9 @@ def health():
 ALLOWED_EXTENSIONS = {".txt", ".md", ".pdf"}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
+@app.get("/metrics")
+def metrics():
+    return get_metrics()
 
 @app.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
@@ -139,14 +143,15 @@ def ask(request: AskRequest):
             "answer": result["answer"],
             "sources": result["sources"],
         }
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
     except Exception:
         logger.exception("SentinelAI failed while answering a question")
         raise HTTPException(
             status_code=500,
             detail="Unable to answer the question. Check the server logs.",
         )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+
 # def ask(request: AskRequest):
 #     try:
 #         ans=answer_question(request.question)['answer'][0]['text'] if answer_question(request.question)['answer'][0] and isinstance(answer_question(request.question)['answer'][0], dict) else answer_question(request.question)

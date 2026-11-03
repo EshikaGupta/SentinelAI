@@ -6,8 +6,17 @@ API_URL = "http://127.0.0.1:8000"
 st.set_page_config(page_title="SentinelAI", page_icon="📄")
 st.title("SentinelAI")
 st.caption("Ask questions about your uploaded documents.")
-
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 with st.sidebar:
+
+    st.divider()
+    st.subheader("Chat")
+
+
+    if st.button("New chat"):
+        st.session_state.messages = []
+        st.rerun()
     st.header("Documents")
 
     uploaded_file = st.file_uploader(

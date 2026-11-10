@@ -1,0 +1,10 @@
+[
+  {
+    "question": "What is Earth's climate influenced by?",
+    "ground_truth": "Earth's climate is influenced by the balance between incoming energy from the Sun and energy leaving Earth."
+  },
+  {
+    "question": "What is Earth's climate influenced by, and what is data literacy?",
+    "ground_truth": "Earth's climate is influenced by the balance between incoming solar energy and energy leaving Earth. Data literacy is the ability to read, question, interpret, and communicate information from data."
+  }
+]

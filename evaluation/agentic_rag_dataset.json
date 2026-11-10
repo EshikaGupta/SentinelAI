@@ -1,0 +1,83 @@
+
+[
+  {
+    "id": "agent_001",
+    "question": "What does the internal API guide say about authentication?",
+    "category": "document_only",
+    "required_tools": ["document_retrieval"],
+    "forbidden_tools": ["web_search", "calculator"],
+    "description": "Tests internal document retrieval."
+  },
+  {
+    "id": "agent_002",
+    "question": "What are the main endpoints described in the internal API documentation?",
+    "category": "document_only",
+    "required_tools": ["document_retrieval"],
+    "forbidden_tools": ["web_search"],
+    "description": "Tests document-grounded answers."
+  },
+  {
+    "id": "agent_003",
+    "question": "What is the history and evolution of artificial intelligence?",
+    "category": "background_research",
+    "required_tools": ["wikipedia_search"],
+    "forbidden_tools": [],
+    "description": "Tests general background research."
+  },
+  {
+    "id": "agent_004",
+    "question": "Calculate 15% of 8500.",
+    "category": "calculation",
+    "required_tools": ["calculator"],
+    "forbidden_tools": ["web_search"],
+    "description": "Tests calculator selection."
+  },
+  {
+    "id": "agent_005",
+    "question": "Compare the RAG architecture described in my internal documents with current RAG best practices.",
+    "category": "multi_source",
+    "required_tools": ["document_retrieval", "web_search"],
+    "forbidden_tools": [],
+    "description": "Tests combining internal and current external information."
+  },
+  {
+    "id": "agent_006",
+    "question": "Explain vector databases and find recent developments in vector search.",
+    "category": "multi_source",
+    "required_tools": ["web_search"],
+    "forbidden_tools": [],
+    "description": "Tests background explanation with current research."
+  },
+  {
+    "id": "agent_007",
+    "question": "If a system processes 1250 requests per hour, how many requests will it process in 8 hours?",
+    "category": "calculation",
+    "required_tools": ["calculator"],
+    "forbidden_tools": ["web_search"],
+    "description": "Tests arithmetic reasoning."
+  },
+  {
+    "id": "agent_008",
+    "question": "Find recent information about enterprise adoption of computer-use agents and explain the historical background of computer-use interfaces.",
+    "category": "multi_source",
+    "required_tools": ["web_search", "wikipedia_search"],
+    "forbidden_tools": [],
+    "description": "Tests multiple external research tools."
+  },
+  {
+    "id": "agent_009",
+    "question": "What does the internal API guide say about authentication, and what are the latest security recommendations for API authentication?",
+    "category": "multi_source",
+    "required_tools": ["document_retrieval", "web_search"],
+    "forbidden_tools": [],
+    "description": "Tests internal evidence plus current external verification."
+  },
+  {
+    "id": "agent_010",
+    "question": "What is the authentication configuration of a private API that is not included in my documents or publicly available?",
+    "category": "unanswerable",
+    "required_tools": ["document_retrieval"],
+    "forbidden_tools": [],
+    "description": "Tests whether the agent acknowledges missing evidence."
+  }
+]

@@ -1,14 +1,15 @@
-
-import hashlib
-import logging
 import threading
+import time
 from typing import Optional
+
 from langsmith import traceable
 from langchain_core.documents import Document
 from langchain_community.retrievers import BM25Retriever
 from sentence_transformers import CrossEncoder
-
-from .vector_store import Chroma
+import hashlib
+import logging
+from .monitoring import record_stage
+from .vector_store import Chroma, get_vector_store
 
 logger = logging.getLogger(__name__)
 
@@ -23,18 +24,12 @@ _reranker = None
 _reranker_lock = threading.Lock()
 
 _bm25_retriever = None
+_bm25_corpus = []
 _bm25_fingerprint = None
-_bm25_lock = threading.Lock()
+_bm25_lock = threading.RLock()
 
-
-def get_bm25_retriever(
-    corpus: list[Document],
-    k: int = SPARSE_K,
-) -> BM25Retriever:
-    """Reuse BM25 while the corpus remains unchanged."""
-    global _bm25_retriever, _bm25_fingerprint
-
-    # Include the source and text of every chunk in the fingerprint.
+def _corpus_fingerprint(corpus: list[Document]) -> str:
+    """Calculate a fingerprint when the corpus is refreshed."""
     hasher = hashlib.sha256()
 
     for document in corpus:
@@ -45,20 +40,88 @@ def get_bm25_retriever(
         hasher.update(document.page_content.encode("utf-8"))
         hasher.update(b"\0")
 
-    fingerprint = hasher.hexdigest()
+    return hasher.hexdigest()
+
+def refresh_bm25_cache(vector_store: Optional[Chroma] = None) -> int:
+    """
+    Refresh the in-memory BM25 corpus from the persistent Chroma collection.
+    Call only after indexing or deleting documents, or during startup.
+    """
+    global _bm25_retriever, _bm25_corpus, _bm25_fingerprint
+
+    vector_store = vector_store or get_vector_store()
+
+    stored = vector_store.get(
+        include=["documents", "metadatas"]
+    )
+
+    texts = stored.get("documents") or []
+    metadatas = stored.get("metadatas") or []
+
+    corpus = [
+        Document(
+            page_content=text,
+            metadata=metadata or {},
+        )
+        for text, metadata in zip(texts, metadatas)
+        if text and text.strip()
+    ]
+
+    fingerprint = _corpus_fingerprint(corpus)
 
     with _bm25_lock:
-        if (
-            _bm25_retriever is None
-            or _bm25_fingerprint != fingerprint
-        ):
-            _bm25_retriever = BM25Retriever.from_documents(corpus)
-            _bm25_fingerprint = fingerprint
+        if fingerprint == _bm25_fingerprint:
+            return len(_bm25_corpus)
 
-            logger.info(
-                "BM25 index rebuilt: chunks=%d",
-                len(corpus),
+        _bm25_corpus = corpus
+        _bm25_fingerprint = fingerprint
+
+        _bm25_retriever = (
+            BM25Retriever.from_documents(corpus)
+            if corpus
+            else None
+        )
+
+        if _bm25_retriever is not None:
+            _bm25_retriever.k = SPARSE_K
+
+        logger.info(
+            "BM25 cache refreshed: chunks=%d",
+            len(corpus),
+        )
+
+    return len(corpus)
+
+def get_cached_chunks() -> list[Document]:
+    """Return the in-memory corpus without reading source files."""
+    with _bm25_lock:
+        if _bm25_fingerprint is None:
+            raise RuntimeError(
+                "BM25 cache has not been initialized. "
+                "Call refresh_bm25_cache() during application startup."
             )
+
+        return list(_bm25_corpus)
+
+def get_bm25_retriever(
+    corpus: list[Document],
+    k: int = SPARSE_K,
+) -> Optional[BM25Retriever]:
+    """
+    Return the cached retriever.
+    The corpus is rebuilt only by refresh_bm25_cache().
+    """
+    global _bm25_retriever
+
+    with _bm25_lock:
+        if _bm25_fingerprint is None:
+            raise RuntimeError(
+                "BM25 cache is not initialized. "
+                "Call refresh_bm25_cache() first."
+            )
+
+        if not _bm25_corpus:
+            return None
 
         _bm25_retriever.k = k
         return _bm25_retriever
@@ -131,13 +194,7 @@ def hybrid_retrieve(
     dense_k: int = DENSE_K,
     sparse_k: int = SPARSE_K,
 ) -> list[Document]:
-    """
-    Retrieve candidates using dense and sparse search,
-    then combine their rankings with Reciprocal Rank Fusion.
 
-    `chunks` should represent the current indexed corpus.
-    `source`, if provided, must match the stored source metadata.
-    """
     if not isinstance(query, str) or not query.strip():
         raise ValueError("Query must not be empty.")
 
@@ -149,41 +206,33 @@ def hybrid_retrieve(
 
     query = query.strip()
 
-    # Apply the same source restriction to both retrievers.
-    corpus = []
-
-    for index, doc in enumerate(chunks):
-        if source is not None and doc.metadata.get("source") != source:
-            continue
-
-        # Copy the document and preserve existing metadata.
-        metadata = dict(doc.metadata)
-
-        # Add the index if it isn't already present.
-        metadata.setdefault("chunk_index", index)
-
-        corpus.append(
-            Document(
-                page_content=doc.page_content,
-                metadata=metadata,
-            )
-        )
+    # Filter the cached corpus if a specific source is requested.
+    corpus = [
+        doc for doc in chunks
+        if source is None or doc.metadata.get("source") == source
+    ]
 
     if not corpus:
         return []
 
-    # 1. Dense retrieval: semantic similarity from Chroma.
+    # 1. Dense retrieval from Chroma.
+    dense_results = run_dense(
+        vector_store,
+        query,
+        dense_k,
+        {"source": source} if source else None,
+    )
 
-    dense_results = run_dense(vector_store, query, dense_k, {"source": source} if source else None)
-
-    # 2. Sparse retrieval: lexical keyword matching with BM25.
-    
+    # 2. Sparse retrieval from the cached BM25 corpus.
     bm25 = get_bm25_retriever(corpus, k=sparse_k)
-    sparse_results = run_bm25(bm25, query)
+
+    sparse_results = (
+        run_bm25(bm25, query)
+        if bm25 is not None
+        else []
+    )
 
     # 3. Reciprocal Rank Fusion.
-    # Each result contributes 1 / (constant + rank).
-    
     candidates = fuse_rankings(
         dense_results=dense_results,
         sparse_results=sparse_results,
@@ -255,25 +304,40 @@ def retrieve_and_rerank(
     source: Optional[str] = None,
     top_k: int = RERANK_TOP_K,
 ) -> list[Document]:
-    """Run the complete hybrid retrieval and reranking pipeline."""
+    start = time.perf_counter()
+
     candidates = hybrid_retrieve(
         query=query,
         chunks=chunks,
         vector_store=vector_store,
         source=source,
     )
-    # print("AFTER HYBRID RETRIEVAL:")
-    # for doc in candidates:
-    #     print(doc.metadata)
+    retrieval_ms = (time.perf_counter() - start) * 1000
+    record_stage(
+        "hybrid_retrieval",
+        retrieval_ms,
+        candidate_count=len(candidates),
+    )
 
-    results= rerank_documents(
+    
+    rerank_start = time.perf_counter()
+    results = rerank_documents(
         query=query,
         documents=candidates,
         top_k=top_k,
     )
-    relevant_results = [
-        doc for doc in results
-        if doc.metadata.get("rerank_score", float("-inf")) >= MIN_RERANK_SCORE
-    ]
+    rerank_ms = (time.perf_counter() - rerank_start) * 1000
+    record_stage(
+        "reranking",
+        rerank_ms,
+        candidate_count=len(candidates),
+        returned_count=len(results),
+    )
+    print(
+        f"Retrieval: {retrieval_ms:.2f} ms | "
+        f"Reranking: {rerank_ms:.2f} ms | "
+        f"Candidates: {len(candidates)} | "
+        f"Returned: {len(results)}"
+    )
 
-    return relevant_results
+    return results

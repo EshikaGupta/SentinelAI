@@ -1,0 +1,38 @@
+
+[
+  {
+    "id": "T1",
+    "question": "What is data literacy?",
+    "expected_tools": ["document_rag"]
+  },
+  {
+    "id": "T2",
+    "question": "Find the latest developments in agentic AI.",
+    "expected_tools": ["web_search"]
+  },
+  {
+    "id": "T3",
+    "question": "Explain the history and development of neural networks.",
+    "expected_tools": ["wikipedia_search"]
+  },
+  {
+    "id": "T4",
+    "question": "Calculate 15 percent of 8500.",
+    "expected_tools": ["calculator"]
+  },
+  {
+    "id": "T5",
+    "question": "Compare the RAG architecture in my documents with current industry practices.",
+    "expected_tools": ["document_rag", "web_search"]
+  },
+  {
+    "id": "T6",
+    "question": "Calculate the percentage improvement in precision from 0.625 to 1.0.",
+    "expected_tools": ["calculator"]
+  },
+  {
+    "id": "T7",
+    "question": "Explain vector databases using Wikipedia and compare the explanation with my uploaded documents.",
+    "expected_tools": ["wikipedia_search", "document_rag"]
+  }
+]

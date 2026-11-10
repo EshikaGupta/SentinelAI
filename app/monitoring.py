@@ -17,9 +17,26 @@ _metrics = {
     "total_retrieved_chunks": 0,
     "error_counts": {},
 }
-
+_stage_metrics = {}
 _recent_requests = deque(maxlen=100)
 
+def record_stage(stage_name: str, duration_ms: float, **details) -> None:
+    """Record timing and optional details for a pipeline stage."""
+    with _lock:
+        stage = _stage_metrics.setdefault(
+            stage_name,
+            {
+                "count": 0,
+                "total_duration_ms": 0.0,
+                "details": {},
+            },
+        )
+
+        stage["count"] += 1
+        stage["total_duration_ms"] += duration_ms
+
+        # Keep the latest values for details such as candidate/returned counts.
+        stage["details"].update(details)
 
 def track_request(func):
     """Track request latency, success, errors, and retrieved chunks."""
@@ -78,6 +95,17 @@ def get_metrics() -> dict:
         total = _metrics["total_requests"]
 
         return {
+            "stages": {
+                name: {
+                    **data,
+                    "total_duration_ms": round(data["total_duration_ms"], 2),
+                    "average_duration_ms": round(
+                        data["total_duration_ms"] / data["count"], 2
+                    ) if data["count"] else 0.0,
+                }
+                for name, data in _stage_metrics.items()
+            },
+
             **_metrics,
             "error_counts": dict(_metrics["error_counts"]),
             "average_latency_ms": (
@@ -104,3 +132,4 @@ def reset_metrics() -> None:
             "error_counts": {},
         })
         _recent_requests.clear()
+        _stage_metrics.clear()

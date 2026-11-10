@@ -1,0 +1,249 @@
+{
+    "evaluated_at": "2026-11-09T19:18:47.094392",
+    "metrics": {
+        "total_questions": 12,
+        "successful_executions": 0,
+        "execution_failure_rate": 1.0,
+        "tool_selection_accuracy": 0.0,
+        "required_tool_recall": 0.0,
+        "forbidden_tool_usage_count": 0,
+        "pass_count": 0,
+        "fail_count": 12
+    },
+    "results": [
+        {
+            "id": "agent_001",
+            "question": "What does the internal API guide say about authentication?",
+            "category": "document_only",
+            "expected_tools": [
+                "document_retrieval"
+            ],
+            "actual_tools": [],
+            "missing_tools": [
+                "document_retrieval"
+            ],
+            "forbidden_tools_used": [],
+            "unexpected_tools": [],
+            "required_tool_coverage": 0.0,
+            "passed": false,
+            "answer": null,
+            "sources": [],
+            "error": "BM25 cache has not been initialized. Call refresh_bm25_cache() during application startup."
+        },
+        {
+            "id": "agent_002",
+            "question": "What are the main endpoints described in the internal API documentation?",
+            "category": "document_only",
+            "expected_tools": [
+                "document_retrieval"
+            ],
+            "actual_tools": [],
+            "missing_tools": [
+                "document_retrieval"
+            ],
+            "forbidden_tools_used": [],
+            "unexpected_tools": [],
+            "required_tool_coverage": 0.0,
+            "passed": false,
+            "answer": null,
+            "sources": [],
+            "error": "Error calling model 'gemini-3.6-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 18h17m21.273078399s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.6-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '65841s'}]}}"
+        },
+        {
+            "id": "agent_003",
+            "question": "What are the latest developments in agentic AI frameworks?",
+            "category": "web_research",
+            "expected_tools": [
+                "web_search"
+            ],
+            "actual_tools": [],
+            "missing_tools": [
+                "web_search"
+            ],
+            "forbidden_tools_used": [],
+            "unexpected_tools": [],
+            "required_tool_coverage": 0.0,
+            "passed": false,
+            "answer": null,
+            "sources": [],
+            "error": "Error calling model 'gemini-3.6-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 18h16m44.316267678s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.6-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '65804s'}]}}"
+        },
+        {
+            "id": "agent_004",
+            "question": "What is the history and evolution of artificial intelligence?",
+            "category": "background_research",
+            "expected_tools": [
+                "wikipedia_search"
+            ],
+            "actual_tools": [],
+            "missing_tools": [
+                "wikipedia_search"
+            ],
+            "forbidden_tools_used": [],
+            "unexpected_tools": [],
+            "required_tool_coverage": 0.0,
+            "passed": false,
+            "answer": null,
+            "sources": [],
+            "error": "Error calling model 'gemini-3.6-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 18h16m8.720322517s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'model': 'gemini-3.6-flash', 'location': 'global'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '65768s'}]}}"
+        },
+        {
+            "id": "agent_005",
+            "question": "Calculate 15% of 8500.",
+            "category": "calculation",
+            "expected_tools": [
+                "calculator"
+            ],
+            "actual_tools": [],
+            "missing_tools": [
+                "calculator"
+            ],
+            "forbidden_tools_used": [],
+            "unexpected_tools": [],
+            "required_tool_coverage": 0.0,
+            "passed": false,
+            "answer": null,
+            "sources": [],
+            "error": "Error calling model 'gemini-3.6-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 18h15m31.211310888s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.6-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '65731s'}]}}"
+        },
+        {
+            "id": "agent_006",
+            "question": "Compare the RAG architecture described in my internal documents with current RAG best practices.",
+            "category": "multi_source",
+            "expected_tools": [
+                "document_retrieval",
+                "web_search"
+            ],
+            "actual_tools": [],
+            "missing_tools": [
+                "document_retrieval",
+                "web_search"
+            ],
+            "forbidden_tools_used": [],
+            "unexpected_tools": [],
+            "required_tool_coverage": 0.0,
+            "passed": false,
+            "answer": null,
+            "sources": [],
+            "error": "Error calling model 'gemini-3.6-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 18h14m27.468392339s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.6-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '65667s'}]}}"
+        },
+        {
+            "id": "agent_007",
+            "question": "Explain vector databases and find recent developments in vector search.",
+            "category": "multi_source",
+            "expected_tools": [
+                "web_search"
+            ],
+            "actual_tools": [],
+            "missing_tools": [
+                "web_search"
+            ],
+            "forbidden_tools_used": [],
+            "unexpected_tools": [],
+            "required_tool_coverage": 0.0,
+            "passed": false,
+            "answer": null,
+            "sources": [],
+            "error": "Error calling model 'gemini-3.6-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 18h13m51.215769076s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'model': 'gemini-3.6-flash', 'location': 'global'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '65631s'}]}}"
+        },
+        {
+            "id": "agent_008",
+            "question": "If a system processes 1250 requests per hour, how many requests will it process in 8 hours?",
+            "category": "calculation",
+            "expected_tools": [
+                "calculator"
+            ],
+            "actual_tools": [],
+            "missing_tools": [
+                "calculator"
+            ],
+            "forbidden_tools_used": [],
+            "unexpected_tools": [],
+            "required_tool_coverage": 0.0,
+            "passed": false,
+            "answer": null,
+            "sources": [],
+            "error": "Error calling model 'gemini-3.6-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 18h13m16.803248761s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'model': 'gemini-3.6-flash', 'location': 'global'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '65596s'}]}}"
+        },
+        {
+            "id": "agent_009",
+            "question": "What are the key differences between LangGraph and CrewAI?",
+            "category": "web_research",
+            "expected_tools": [
+                "web_search"
+            ],
+            "actual_tools": [],
+            "missing_tools": [
+                "web_search"
+            ],
+            "forbidden_tools_used": [],
+            "unexpected_tools": [],
+            "required_tool_coverage": 0.0,
+            "passed": false,
+            "answer": null,
+            "sources": [],
+            "error": "Error calling model 'gemini-3.6-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 18h12m41.030000202s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.6-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '65561s'}]}}"
+        },
+        {
+            "id": "agent_010",
+            "question": "Find recent information about enterprise adoption of computer-use agents and explain the historical background of computer-use interfaces.",
+            "category": "multi_source",
+            "expected_tools": [
+                "web_search",
+                "wikipedia_search"
+            ],
+            "actual_tools": [],
+            "missing_tools": [
+                "web_search",
+                "wikipedia_search"
+            ],
+            "forbidden_tools_used": [],
+            "unexpected_tools": [],
+            "required_tool_coverage": 0.0,
+            "passed": false,
+            "answer": null,
+            "sources": [],
+            "error": "Error calling model 'gemini-3.6-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 18h12m4.824149517s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.6-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '65524s'}]}}"
+        },
+        {
+            "id": "agent_011",
+            "question": "What does the internal API guide say about authentication, and what are the latest security recommendations for API authentication?",
+            "category": "multi_source",
+            "expected_tools": [
+                "document_retrieval",
+                "web_search"
+            ],
+            "actual_tools": [],
+            "missing_tools": [
+                "document_retrieval",
+                "web_search"
+            ],
+            "forbidden_tools_used": [],
+            "unexpected_tools": [],
+            "required_tool_coverage": 0.0,
+            "passed": false,
+            "answer": null,
+            "sources": [],
+            "error": "Error calling model 'gemini-3.6-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 18h11m28.651666579s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.6-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '65488s'}]}}"
+        },
+        {
+            "id": "agent_012",
+            "question": "What is the authentication configuration of a private API that is not included in my documents or publicly available?",
+            "category": "unanswerable",
+            "expected_tools": [
+                "document_retrieval"
+            ],
+            "actual_tools": [],
+            "missing_tools": [
+                "document_retrieval"
+            ],
+            "forbidden_tools_used": [],
+            "unexpected_tools": [],
+            "required_tool_coverage": 0.0,
+            "passed": false,
+            "answer": null,
+            "sources": [],
+            "error": "Error calling model 'gemini-3.6-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.6-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 18h10m51.620625724s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.6-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '65451s'}]}}"
+        }
+    ]
+}

@@ -118,9 +118,6 @@ def index_document(
         "stale_chunks_removed": len(stale_ids),
     }
 
-def delete_document(source_path: str) -> None:
-    vector_store = get_vector_store()
-    vector_store.delete(where={"source": str(Path(source_path).resolve())})
     
 def index_directory(directory: str | Path = DOCUMENTS_DIRECTORY) -> list[dict]:
     """Index every supported document in a directory (recursively)."""

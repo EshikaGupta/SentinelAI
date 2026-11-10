@@ -5,11 +5,29 @@ from .ingestion import DOCUMENT_PATH
 from .vector_store import index_directory
 from .graph import answer_question
 import logging
+import os
 import uuid
 from .monitoring import get_metrics
+from .retrieval import refresh_bm25_cache
 
 app = FastAPI(title="SentinelAI API")
+logger = logging.getLogger(__name__)
 
+@app.on_event("startup")
+def initialize_document_index():
+
+    logger.info("Initializing SentinelAI document index...")
+
+    # Synchronize files with Chroma on application startup.
+    index_directory(DOCUMENT_PATH.parent)
+    refresh_bm25_cache()
+    # Load the indexed chunks into the BM25 cache.
+    count = refresh_bm25_cache()
+
+    logger.info(
+        "SentinelAI ready. BM25 chunks loaded: %d",
+        count,
+    )
 logger = logging.getLogger(__name__)
 
 class AskRequest(BaseModel):
@@ -18,8 +36,10 @@ class AskRequest(BaseModel):
 
 class AskResponse(BaseModel):
     question: str
-    answer: list[str]
-    sources: list[str]
+    answer: list[dict]
+    sources: list[dict]
+
+
 
 @app.get("/health")
 def health():
@@ -43,32 +63,60 @@ async def upload_document(file: UploadFile = File(...)):
             detail="Only .txt, .md, and .pdf files are supported.",
         )
 
-    content = await file.read()
-
-    if not content:
-        raise HTTPException(status_code=400, detail="The uploaded file is empty.")
-
-    if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=413, detail="File must be 10 MB or smaller.")
-
     documents_dir = DOCUMENT_PATH.parent
     documents_dir.mkdir(parents=True, exist_ok=True)
 
-    # Avoid overwriting an existing document with the same name.
     destination = documents_dir / filename
     if destination.exists():
-        destination = documents_dir / f"{destination.stem}_{uuid.uuid4().hex[:8]}{extension}"
+        destination = documents_dir / (
+            f"{destination.stem}_{uuid.uuid4().hex[:8]}{extension}"
+        )
+
+    # Write to a temporary file first; don't hold the whole upload in memory.
+    temporary_path = documents_dir / f".upload_{uuid.uuid4().hex}.tmp"
+    total_bytes = 0
 
     try:
-        destination.write_bytes(content)
+        with temporary_path.open("wb") as output:
+            while True:
+                chunk = await file.read(1024 * 1024)  # 1 MB at a time
+                if not chunk:
+                    break
+
+                total_bytes += len(chunk)
+                if total_bytes > MAX_FILE_SIZE:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="File must be 10 MB or smaller.",
+                    )
+
+                output.write(chunk)
+
+        if total_bytes == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="The uploaded file is empty.",
+            )
+
+        os.replace(temporary_path, destination)
         index_directory(documents_dir)
+
+    except HTTPException:
+        temporary_path.unlink(missing_ok=True)
+        destination.unlink(missing_ok=True)
+        raise
+
     except Exception:
+        temporary_path.unlink(missing_ok=True)
         destination.unlink(missing_ok=True)
         logger.exception("Document upload or indexing failed")
         raise HTTPException(
             status_code=500,
             detail="The document could not be saved and indexed. Check the server logs.",
         )
+
+    finally:
+        await file.close()
 
     return {
         "message": "Document uploaded and indexed successfully.",

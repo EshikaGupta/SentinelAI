@@ -1,689 +1,739 @@
+# SentinelAI --- Agentic RAG with Hybrid Retrieval and Observability
 
-# SentinelAI — Observable RAG Pipeline with Hybrid Retrieval
+SentinelAI is an agentic Retrieval-Augmented Generation (RAG)
+application that answers questions using internal documents and, when
+needed, external information sources. It combines hybrid retrieval,
+evidence assessment, tool-calling, and LLM-based answer generation in a
+stateful LangGraph workflow.
 
-SentinelAI is a Retrieval-Augmented Generation (RAG) project that answers questions using information retrieved from source documents. It combines semantic search, BM25 keyword retrieval, Reciprocal Rank Fusion (RRF), CrossEncoder reranking, and Google Gemini to generate context-grounded answers.
+The application supports PDF, Markdown, and text documents. It uses
+ChromaDB for persistent vector storage, BM25 for keyword retrieval,
+Reciprocal Rank Fusion (RRF) to combine retrieval rankings, and a
+CrossEncoder to rerank candidate passages. Google Gemini is used for
+query planning, evidence assessment, research/tool selection, and answer
+generation.
 
-The project is being developed incrementally, with an emphasis on retrieval quality, workflow orchestration, observability, evaluation, and reliability.
-
-## Project Status
-
-| Stage | Description | Status |
-|---|---|---|
-| Stage 1 | Core RAG pipeline: ingestion, embeddings, vector storage, hybrid retrieval, reranking, and Gemini answer generation | Completed; core flow developed |
-| Stage 2 | LangGraph orchestration, LangSmith tracing, and request-level latency/error monitoring | Completed; validate trace coverage and metrics |
-| Stage 3 | FastAPI backend and Streamlit interface | Planned |
-| Stage 4 | RAGAS and LLM-as-a-Judge evaluation | Planned |
-| Stage 5 | Expanded automated testing and regression tests | Planned |
-| Stage 6 | Improved monitoring, documentation, and reliability | Planned |
+SentinelAI also includes a FastAPI backend, a Streamlit interface,
+LangSmith tracing, custom request and retrieval monitoring, and
+evaluation scripts for RAG quality and agent tool selection.
 
 ## Key Features
 
-### 1. Document Ingestion and Chunking
-- Loads documents from the local knowledge base.
-- Splits text using `RecursiveCharacterTextSplitter`.
-- Uses configurable chunk size and overlap.
-- Preserves source metadata and chunk positions.
-- Validates missing, empty, and invalid document inputs.
+### 1. Document ingestion and chunking
 
-### 2. Persistent Vector Storage
-- Uses ChromaDB for persistent vector storage.
-- Generates embeddings locally using Sentence Transformers.
-- Uses `sentence-transformers/all-MiniLM-L6-v2` as the embedding model.
-- Stores document chunks with metadata.
-- Uses deterministic identifiers and content hashes for document indexing.
-- Supports document re-indexing and removal of stale chunks.
+-   Supports `.pdf`, `.md`, and `.txt` documents.
+-   Extracts text and splits it using LangChain's
+    `RecursiveCharacterTextSplitter`.
+-   Preserves source metadata and chunk positions.
+-   Uses overlapping chunks to retain context across chunk boundaries.
+-   Validates missing and empty documents.
 
-### 3. Hybrid Retrieval
-Combines two complementary retrieval approaches:
+Current configuration:
 
-- **Dense retrieval:** Finds semantically similar document chunks using embeddings.
-- **Sparse retrieval:** Uses BM25 to find relevant keyword matches.
-
-The two ranked lists are combined using Reciprocal Rank Fusion (RRF).
-
-### 4. CrossEncoder Reranking
-A CrossEncoder scores query-document pairs and reranks the retrieved candidates to prioritize relevant passages before generation.
-
-### 5. Grounded Answer Generation
-- Uses Google Gemini through LangChain.
-- Generates answers using retrieved document context.
-- Instructs the model to acknowledge insufficient evidence.
-- Treats retrieved document content as untrusted input.
-- Returns the answer alongside source information.
-
-### 6. LangGraph Workflow
-The RAG pipeline is organized as a LangGraph workflow with:
-
-- A retrieval node.
-- Conditional routing based on retrieved evidence.
-- An answer-generation node.
-- An insufficient-evidence node.
-
-This makes the workflow easier to inspect, extend, and test.
-
-### 7. LangSmith Observability
-LangSmith is configured to trace supported LangChain and LLM operations.
-
-Important retrieval operations can also be instrumented to expose individual spans for:
-- Dense retrieval.
-- BM25 retrieval.
-- Reciprocal Rank Fusion.
-- CrossEncoder reranking.
-- The overall retrieval pipeline.
-
-Trace coverage depends on the implemented instrumentation and should be verified in the LangSmith project.
-
-### 8. Request-Level Monitoring
-A lightweight Python monitoring module records:
-- Total requests.
-- Successful and failed requests.
-- Total and average request latency.
-- Average number of returned source chunks.
-- Error counts by exception type.
-- A rolling history of recent requests.
-
-Metrics are currently held in process memory and reset when the application restarts.
-
----
-
-## Architecture
-
-```mermaid
-flowchart TD
-    A[User Question] --> B[LangGraph Workflow]
-    B --> C[Load and Split Documents]
-    C --> D[ChromaDB Dense Retrieval]
-    C --> E[BM25 Keyword Retrieval]
-    D --> F[Reciprocal Rank Fusion]
-    E --> F
-    F --> G[CrossEncoder Reranking]
-    G --> H{Evidence Retrieved?}
-    H -->|Yes| I[Gemini Answer Generation]
-    H -->|No| J[Insufficient Evidence Response]
-    I --> K[Answer and Sources]
-    J --> K
-    K --> L[Request Metrics]
-    B -. tracing .-> M[LangSmith]
-    G -. retrieval tracing .-> M
-    I -. LLM tracing .-> M
-```
-
-The diagram shows the logical workflow. LangSmith tracing and request-level metrics serve different purposes: tracing helps inspect individual executions, while monitoring aggregates request outcomes and latency.
-
-## Technology Stack
-
-| Component | Technology | Purpose |
-|---|---|---|
-| Language | Python | Application logic |
-| LLM | Google Gemini (`gemini-3.6-flash`) | Answer generation |
-| LLM framework | LangChain | Model integration and document handling |
-| Workflow orchestration | LangGraph | RAG workflow and conditional routing |
-| Embeddings | Sentence Transformers | Local semantic embeddings |
-| Vector database | ChromaDB | Persistent vector storage |
-| Keyword retrieval | BM25 | Lexical search |
-| Ranking fusion | Reciprocal Rank Fusion | Combines retrieval rankings |
-| Reranking | CrossEncoder | Refines document relevance |
-| Observability | LangSmith | Tracing and debugging |
-| API framework | FastAPI | Planned backend |
-| UI framework | Streamlit | Planned user interface |
-| Evaluation | RAGAS and LLM-as-a-Judge | Planned answer-quality evaluation |
-| Testing | pytest | Planned expanded automated testing |
-
-## Project Structure
-
-Current repository structure:
-
-```text
-sentinalAI/
-├── .vscode/
-├── app/
-│   ├── __init__.py
-│   ├── graph.py
-│   ├── ingestion.py
-│   ├── monitoring.py
-│   ├── retrieval.py
-│   └── vector_store.py
-│
-├── chroma_db/
-├── data/
-│   └── sample_docs/
-│       └── api_guide.txt
-│
-├── venv/
-├── .env
-├── .env.example
-├── .gitignore
-├── requirements.txt
-├── test_chroma.py
-├── test_retrieval.py
-└── test_vector_store.py
-```
-
-The repository folder is currently named `sentinalAI`. Rename it to `sentinel-ai` if you want, but update your terminal path and Git configuration as necessary. The Python package is `app`.
-
-### File Responsibilities
-
-| File | Responsibility |
-|---|---|
-| `app/graph.py` | Defines the LangGraph workflow and `answer_question()` entry point. |
-| `app/ingestion.py` | Loads documents and splits them into chunks. |
-| `app/monitoring.py` | Tracks request latency, success/failure counts, and errors. |
-| `app/retrieval.py` | Implements dense retrieval, BM25, RRF, caching, and CrossEncoder reranking. |
-| `app/vector_store.py` | Configures embeddings and ChromaDB; indexes, searches, and deletes document chunks. |
-| `data/sample_docs/api_guide.txt` | Sample API security document used as the knowledge base. |
-| `chroma_db/` | Local persisted ChromaDB data. |
-| `test_chroma.py` | Standalone ChromaDB checks. |
-| `test_retrieval.py` | Standalone retrieval checks. |
-| `test_vector_store.py` | Standalone vector-store checks. |
-| `.env` | Local credentials and environment settings; never commit this file. |
-| `.env.example` | Template showing required environment variables. |
-| `requirements.txt` | Python dependencies. |
-
-### Planned Files
-
-The following files do not exist in the current project structure and will be added in later stages:
-
-```text
-app/
-└── main.py                 # FastAPI application
-
-evaluation/
-├── dataset.json            # Evaluation questions and references
-├── evaluators.py           # Custom LLM-as-a-Judge evaluators
-└── evaluate.py             # Evaluation runner
-
-tests/
-└── test_rag.py             # Expanded pytest suite
-
-ui.py                       # Streamlit interface
-README.md                   # Project documentation
-```
-
-These are planned additions, not existing implementations.
-
----
-
-## How the RAG Pipeline Works
-
-### Step 1: Load and split documents
-
-`app/ingestion.py` loads the sample API guide and divides it into overlapping chunks.
-
-Current starting configuration:
-
-```python
+``` python
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 ```
 
-These settings refer to characters rather than exact token counts.
+These values are character-based, not token-based.
 
-Overlap helps preserve context when a sentence or concept crosses a chunk boundary.
+### 2. Embeddings and persistent vector storage
 
-### Step 2: Generate embeddings and index chunks
+-   Uses `sentence-transformers/all-MiniLM-L6-v2` through
+    `HuggingFaceEmbeddings`.
+-   Generates embeddings locally.
+-   Stores document text, embeddings, metadata, and IDs in ChromaDB.
+-   Uses the persistent collection `sentinel_documents`.
+-   Generates deterministic chunk IDs using source information, content
+    hashes, and chunk indexes.
+-   Supports re-indexing and removal of stale chunks when a source
+    document changes.
+-   Supports document deletion from the vector store.
 
-The local Sentence Transformers model converts each chunk into a vector representation.
+### 3. Hybrid retrieval
 
-ChromaDB stores the vectors, document text, and associated metadata. The persistent index allows the application to retrieve previously indexed content.
+Combines two retrieval methods: - **Dense retrieval:** Uses embedding
+similarity and ChromaDB to find semantically related passages. -
+**Sparse retrieval:** Uses BM25 to find lexical and keyword matches.
 
-### Step 3: Retrieve candidates
+The BM25 retriever is built from the indexed document corpus and cached
+in memory. A corpus fingerprint is used to determine whether the cached
+retriever needs to be refreshed.
 
-Dense retrieval finds semantically similar chunks, while BM25 retrieves chunks using lexical matching.
+### 4. Reciprocal Rank Fusion
 
-The BM25 retriever is cached using a corpus fingerprint so it can be reused when the indexed corpus has not changed.
+Dense and BM25 retrieval produce rankings with different score scales.
+SentinelAI combines their rankings using Reciprocal Rank Fusion (RRF),
+which uses ranking positions rather than adding raw retrieval scores.
 
-### Step 4: Combine rankings
+The current RRF constant is `60`.
 
-Reciprocal Rank Fusion combines the dense and sparse rankings.
+\[ RRF(d)=`\sum`{=tex}\_{r
+`\in `{=tex}R}`\frac{1}{k_0+\operatorname{rank}_r(d)}`{=tex} \]
 
-The RRF scoring formula is:
+### 5. CrossEncoder reranking
 
-\[
-\operatorname{RRF}(d)=
-\sum_{r \in R}
-\frac{1}{k_0+\operatorname{rank}_r(d)}
-\]
+A CrossEncoder scores query-document pairs and reorders candidate
+passages by relevance.
 
-Here, `d` is a document, `R` is the set of rankings, and `k₀` is the smoothing constant.
+Model: `cross-encoder/ms-marco-MiniLM-L-6-v2`
 
-The current starting configuration uses an RRF constant of `60`.
+Current configuration:
 
-### Step 5: Rerank candidates
-
-The CrossEncoder evaluates query-document pairs and sorts candidates by relevance.
-
-Current starting configuration:
-
-```python
+``` python
 DENSE_K = 10
 SPARSE_K = 10
 RERANK_TOP_K = 5
+RRF_CONSTANT = 60
 ```
 
-These are initial settings, not empirically optimized values. Their impact should be measured during evaluation.
+These are current configuration values, not claims of empirically
+optimal settings.
 
-### Step 6: Generate the answer
+### 6. Agentic workflow with LangGraph
 
-LangGraph routes the request based on the retrieval result.
+LangGraph orchestrates question answering using shared state, nodes, and
+conditional routing.
 
-- If documents are returned, the workflow passes their content to Gemini for answer generation.
-- If no documents are returned, the workflow produces an insufficient-evidence response.
+The workflow includes: - **Query planner:** Uses Gemini structured
+output to decide whether the question needs internal documents, web
+search, Wikipedia, or calculation. - **Document retrieval:** Runs hybrid
+retrieval and CrossEncoder reranking when internal documents are
+required. - **Evidence evaluator:** Assesses whether retrieved passages
+sufficiently cover the question, partially cover it, or are
+insufficient. - **Document answer generation:** Answers directly from
+internal evidence when it is sufficient and no external source was
+requested. - **Research agent:** Uses Gemini tool calling to decide
+whether external research or calculation is needed. - **Tool
+execution:** Uses LangGraph's `ToolNode` to execute requested external
+tools and return results to the research agent. - **Finalization:**
+Produces a final response when the research iteration limit is reached.
 
-The result contains the question, generated answer, and source information.
+The research agent has access to these external tools:
 
-A crucial distinction: returning no retrieved documents does not prove that the knowledge base lacks an answer. Retrieval settings and document coverage affect this decision.
+  -----------------------------------------------------------------------
+  Tool                                Purpose
+  ----------------------------------- -----------------------------------
+  `web_search`                        Searches the web using DDGS and
+                                      returns result titles, URLs, and
+                                      snippets.
 
----
+  `wikipedia_search`                  Searches Wikipedia and returns page
+                                      summaries and URLs.
+
+  `calculator`                        Evaluates supported mathematical
+                                      expressions using a restricted
+                                      AST-based evaluator.
+  -----------------------------------------------------------------------
+
+Internal document retrieval is implemented as a dedicated LangGraph node
+in the current graph. The `document_rag` tool helper also exists in
+`app/agent_tools.py`, but it is not bound to the current research agent.
+
+The graph supports iterative tool execution, subject to its configured
+iteration and recursion limits.
+
+### 7. Answer and source handling
+
+-   Generates answers using Google Gemini through LangChain.
+-   Uses retrieved internal passages as context for document-grounded
+    answers.
+-   Passes internal evidence and evidence-assessment results to the
+    research agent when external research is required.
+-   Extracts and deduplicates source information from internal document
+    results and external tool messages.
+-   Returns the question, answer, and sources from `answer_question()`.
+
+Retrieved document text and external search results are treated as
+information to evaluate, not as instructions that should override the
+system's behaviour.
+
+### 8. LangSmith tracing
+
+LangSmith is used to inspect supported LLM and workflow executions.
+
+The application loads LangSmith configuration from environment variables
+and uses `@traceable` instrumentation on important workflow and
+retrieval functions. Instrumented operations include query planning,
+document retrieval, evidence evaluation, answer generation, research,
+finalization, dense retrieval, BM25 retrieval, RRF, and reranking.
+
+Tracing helps inspect supported run inputs and outputs, execution
+structure, latency, and failures. Exact trace coverage depends on the
+LangChain integrations and explicit instrumentation.
+
+### 9. Custom monitoring
+
+`app/monitoring.py` provides lightweight in-process monitoring.
+
+Request-level metrics include: - Total requests. - Successful
+requests. - Failed requests. - Total and average request latency. -
+Average number of returned sources. - Error counts by exception type. -
+A bounded history of recent requests.
+
+Stage-level metrics record execution counts, cumulative duration,
+average duration, and the latest supplied details for instrumented
+stages such as hybrid retrieval and reranking.
+
+The monitoring module uses `time.perf_counter()` for elapsed-time
+measurements and a thread lock to protect shared in-process metric
+updates.
+
+Metrics are held in memory. They reset when the process restarts and are
+not shared across multiple worker processes.
+
+### 10. FastAPI backend
+
+The FastAPI application is defined in `app/api.py`.
+
+  -------------------------------------------------------------------------
+  Endpoint                  Method                  Description
+  ------------------------- ----------------------- -----------------------
+  `/health`                 GET                     Returns application
+                                                    health information.
+
+  `/metrics`                GET                     Returns custom
+                                                    monitoring metrics.
+
+  `/upload`                 POST                    Accepts supported
+                                                    documents, enforces the
+                                                    upload size limit,
+                                                    saves the file, and
+                                                    indexes it.
+
+  `/documents`              GET                     Lists available
+                                                    documents.
+
+  `/documents/{filename}`   DELETE                  Deletes a document and
+                                                    its indexed chunks.
+
+  `/ask`                    POST                    Runs the LangGraph
+                                                    question-answering
+                                                    workflow.
+  -------------------------------------------------------------------------
+
+The `/ask` endpoint validates the incoming question and returns the
+question, answer, and sources. The upload endpoint streams the incoming
+file and applies a 10 MB size limit.
+
+The API initializes the document index and BM25 cache during application
+startup.
+
+### 11. Streamlit interface
+
+The Streamlit application is defined in `app/streamlit_app.py`. It
+communicates with the FastAPI backend over HTTP and provides: - A
+conversational question-answering interface. - Chat history and new-chat
+handling. - Document upload. - Document listing and deletion. - Answer
+and source display.
+
+The UI uses the API rather than directly invoking the vector store or
+model.
+
+### 12. Evaluation
+
+SentinelAI includes separate evaluation code for RAG answer quality and
+agent tool-selection behaviour.
+
+#### RAGAS evaluation
+
+`evaluation/evaluate.py` runs questions from the evaluation dataset
+through the application, collects generated answers and retrieved
+contexts, and evaluates the resulting dataset using configured RAGAS
+metrics.
+
+The current evaluation script configures context precision and context
+recall. These metrics assess the relevance of retrieved passages and
+coverage of reference evidence, respectively.
+
+Evaluation results depend on the dataset, model, configuration, and
+evaluation run. The small current dataset is suitable for development
+checks, not broad statistical claims about system quality.
+
+#### Agent evaluation
+
+`evaluation/agent_evaluator.py` evaluates agent behaviour against the
+agentic RAG test dataset.
+
+It checks expected and forbidden tool usage and reports
+tool-selection-related measures such as required-tool recall,
+tool-selection accuracy, forbidden-tool usage, and execution failures.
+
+The current tool-use evaluation is based on the recorded plan and tool
+messages. Document retrieval is inferred from the planner's document
+requirement, while external tool use is identified from tool messages.
+It is therefore not a complete independent audit of every graph-node
+execution.
+
+### 13. Tests
+
+The repository includes tests and standalone checks for API behaviour,
+retrieval, ChromaDB, and vector-store functionality.
+
+Run the pytest suite from the project root:
+
+``` powershell
+python -m pytest -v
+```
+
+## Architecture
+
+``` mermaid
+flowchart TD
+    A["User"] --> B["Streamlit UI"]
+    B --> C["FastAPI"]
+    C --> D["answer_question()"]
+    D --> E["LangGraph Planner"]
+
+    E --> F{"Needs internal documents?"}
+    F -->|Yes| G["Hybrid Document Retrieval"]
+    F -->|No| N["Research Agent"]
+
+    G --> H["ChromaDB Dense Search"]
+    G --> I["BM25 Sparse Search"]
+    H --> J["RRF Fusion"]
+    I --> J
+    J --> K["CrossEncoder Reranking"]
+    K --> L["Evidence Evaluator"]
+
+    L --> M{"Sufficient and no external source requested?"}
+    M -->|Yes| O["Document Answer Generation"]
+    M -->|No| N
+
+    N --> P{"External tool call?"}
+    P -->|Yes| Q["LangGraph ToolNode"]
+    Q --> N
+    P -->|No| R["Final Answer"]
+
+    O --> S["Extract Answer and Sources"]
+    R --> S
+    S --> T["FastAPI Response"]
+
+    D -. "Request and stage metrics" .-> U["Custom Monitoring"]
+    D -. "Traces" .-> V["LangSmith"]
+```
+
+LangSmith tracing and custom monitoring serve different purposes:
+tracing helps inspect individual executions, while custom monitoring
+aggregates request outcomes and stage timings.
+
+## Technology Stack
+
+  -----------------------------------------------------------------------
+  Component               Technology              Purpose
+  ----------------------- ----------------------- -----------------------
+  Language                Python                  Application logic
+
+  LLM                     Google Gemini           Planning, evidence
+                                                  assessment, tool
+                                                  selection, and answer
+                                                  generation
+
+  LLM integration         LangChain               Model, document,
+                                                  retriever, and tool
+                                                  abstractions
+
+  Workflow orchestration  LangGraph               Stateful graph,
+                                                  conditional routing,
+                                                  and tool loop
+
+  Embeddings              Sentence Transformers   Local semantic
+                                                  embeddings
+
+  Embedding integration   HuggingFaceEmbeddings   Loads and invokes the
+                                                  embedding model
+
+  Vector database         ChromaDB                Persistent vector
+                                                  storage
+
+  Sparse retrieval        BM25                    Keyword-based retrieval
+
+  Ranking fusion          Reciprocal Rank Fusion  Combines dense and
+                                                  sparse rankings
+
+  Reranking               CrossEncoder            Reranks query-document
+                                                  candidates
+
+  Web search              DDGS                    External web search
+
+  Background knowledge    Wikipedia Python        Wikipedia search and
+                          library                 summaries
+
+  Calculation             Python AST and operator Restricted mathematical
+                                                  expression evaluation
+
+  Observability           LangSmith               LLM and workflow
+                                                  tracing
+
+  Custom monitoring       Python                  Request and stage-level
+                                                  metrics
+
+  API                     FastAPI                 Backend HTTP endpoints
+
+  UI                      Streamlit               User-facing application
+
+  RAG evaluation          RAGAS                   Retrieval-context
+                                                  evaluation
+
+  Agent evaluation        Custom evaluator        Checks expected and
+                                                  forbidden tool usage
+
+  Testing                 pytest                  Automated tests
+  -----------------------------------------------------------------------
+
+## Project Structure
+
+``` text
+sentinalAI/
+├── app/
+│   ├── __init__.py
+│   ├── agent_tools.py
+│   ├── api.py
+│   ├── graph.py
+│   ├── ingestion.py
+│   ├── monitoring.py
+│   ├── planning.py
+│   ├── retrieval.py
+│   ├── streamlit_app.py
+│   └── vector_store.py
+│
+├── data/
+│   └── sample_docs/
+│       └── ...
+│
+├── evaluation/
+│   ├── agent_evaluator.py
+│   ├── agentic_rag_dataset.json
+│   ├── dataset.json
+│   └── evaluate.py
+│
+├── tests/
+│   └── ...
+│
+├── chroma_db/
+├── .env.example
+├── .gitignore
+├── requirements.txt
+└── README.md
+```
+
+The exact contents of `data/sample_docs/`, `tests/`, and local runtime
+directories may vary. `chroma_db/` contains local persisted vector-store
+data and should be treated as application data rather than source code.
+
+### Main file responsibilities
+
+  ---------------------------------------------------------------------------
+  File                                    Responsibility
+  --------------------------------------- -----------------------------------
+  `app/ingestion.py`                      Loads PDF, Markdown, and text files
+                                          and splits them into chunks.
+
+  `app/vector_store.py`                   Configures embeddings and ChromaDB;
+                                          indexes documents and removes
+                                          document chunks.
+
+  `app/retrieval.py`                      Implements dense retrieval, BM25
+                                          caching, RRF fusion, CrossEncoder
+                                          reranking, and retrieval-stage
+                                          timing.
+
+  `app/planning.py`                       Defines structured query planning
+                                          and evidence assessment.
+
+  `app/agent_tools.py`                    Implements web search, Wikipedia
+                                          search, calculator, and the
+                                          document RAG tool helper.
+
+  `app/graph.py`                          Defines the LangGraph workflow and
+                                          `answer_question()` entry point.
+
+  `app/monitoring.py`                     Tracks request-level and
+                                          stage-level metrics.
+
+  `app/api.py`                            Defines FastAPI endpoints for
+                                          health, metrics, uploads, document
+                                          management, and questions.
+
+  `app/streamlit_app.py`                  Implements the Streamlit frontend
+                                          and calls the FastAPI backend.
+
+  `evaluation/evaluate.py`                Runs RAGAS evaluation on the
+                                          configured evaluation dataset.
+
+  `evaluation/agent_evaluator.py`         Evaluates agent tool-selection
+                                          behaviour against the agentic
+                                          dataset.
+
+  `evaluation/dataset.json`               Contains RAG evaluation examples.
+
+  `evaluation/agentic_rag_dataset.json`   Contains agent/tool-selection
+                                          evaluation examples.
+
+  `requirements.txt`                      Lists Python dependencies.
+
+  `.env.example`                          Documents required environment
+                                          variables.
+  ---------------------------------------------------------------------------
 
 ## Prerequisites
 
-- Python installed and available through PowerShell.
-- Git, if cloning the repository.
-- A Google AI API key for Gemini.
-- A LangSmith API key for authenticated tracing.
-- Internet access for Gemini API requests and initial model downloads.
+-   Python installed and available from the terminal.
+-   Git, if cloning the repository.
+-   A Google AI API key for Gemini.
+-   A LangSmith API key if remote tracing is required.
+-   Internet access for Gemini API requests, web search, Wikipedia
+    access, and initial model downloads.
 
-The development environment has used Python 3.13. If a dependency fails to install, check its supported Python versions and use a compatible environment.
+The development environment has used Python 3.13. Dependency
+compatibility can vary by package version.
 
 ## Installation and Setup
 
-The following commands assume Windows PowerShell and that you are working from the project root.
+The following commands assume Windows PowerShell and that the terminal
+is opened at the repository root.
 
-### 1. Navigate to the project
+### 1. Clone the repository
 
-If the repository already exists locally, open its directory in the terminal.
-
-For example:
-
-```powershell
-cd "D:\path\to\sentinalAI"
+``` powershell
+git clone https://github.com/EshikaGupta/SentinelAI.git
+cd SentinelAI
 ```
 
-Replace the example path with your actual project path.
+If the repository is already cloned, navigate to its local directory
+instead.
 
 ### 2. Create and activate a virtual environment
 
-If you already have a working `venv`, you can reuse it.
-
-To create a new environment:
-
-```powershell
+``` powershell
 py -m venv venv
 .\venv\Scripts\Activate.ps1
 ```
 
-If PowerShell blocks script activation, use an approved alternative terminal or follow your organization's execution-policy guidance.
-
 ### 3. Install dependencies
 
-```powershell
+``` powershell
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-The core dependency set includes the packages used for the current pipeline:
-
-```text
-langgraph
-langchain-core
-langchain-google-genai
-langchain-text-splitters
-langchain-chroma
-chromadb
-langchain-huggingface
-sentence-transformers
-langchain-community
-rank-bm25
-langsmith
-python-dotenv
-```
-
-FastAPI, Uvicorn, Streamlit, pytest, and evaluation dependencies can be added as their respective stages are implemented.
-
-Keep `requirements.txt` aligned with the packages actually used and pin compatible versions after verifying the environment.
-
 ### 4. Configure environment variables
 
-Create or update `.env` in the project root:
+Create a `.env` file in the project root using `.env.example` as a
+template.
 
-```dotenv
+``` dotenv
 GOOGLE_API_KEY=your_google_api_key
+GOOGLE_MODEL=your_configured_gemini_model
+
 LANGSMITH_API_KEY=your_langsmith_api_key
 LANGSMITH_TRACING=true
 LANGSMITH_PROJECT=sentinel-ai
 ```
 
-Replace the placeholders with your actual credentials.
+Use the model name configured for your Gemini account and current
+application environment. Do not commit `.env` or real credentials.
 
-The `.env.example` file should contain placeholders only:
+## Running SentinelAI
 
-```dotenv
-GOOGLE_API_KEY=
-LANGSMITH_API_KEY=
+Run commands from the project root so Python can import the `app`
+package.
+
+### 1. Start the FastAPI backend
+
+``` powershell
+uvicorn app.api:app --reload
+```
+
+FastAPI initializes the document index and BM25 cache during startup.
+
+API documentation:
+
+``` text
+http://127.0.0.1:8000/docs
+```
+
+Health endpoint:
+
+``` text
+http://127.0.0.1:8000/health
+```
+
+Metrics endpoint:
+
+``` text
+http://127.0.0.1:8000/metrics
+```
+
+### 2. Start the Streamlit frontend
+
+Open a second terminal, activate the same virtual environment, navigate
+to the project root, and run:
+
+``` powershell
+streamlit run app/streamlit_app.py
+```
+
+The Streamlit application communicates with the FastAPI backend. Ensure
+the API is running and the frontend's configured API URL points to it.
+
+### 3. Use the API directly
+
+Example request:
+
+``` powershell
+$body = @{
+    question = "What does the internal documentation say about API rate limits?"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+    -Uri "http://127.0.0.1:8000/ask" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $body
+```
+
+The response contains the question, answer, and sources.
+
+## Monitoring and Observability
+
+### LangSmith
+
+Configure the LangSmith environment variables before starting the API:
+
+``` dotenv
+LANGSMITH_API_KEY=your_langsmith_api_key
 LANGSMITH_TRACING=true
 LANGSMITH_PROJECT=sentinel-ai
 ```
 
-Never commit your real `.env` file or expose API keys in logs, screenshots, or source code.
+Use the LangSmith project to inspect supported model calls and
+explicitly instrumented workflow/retrieval operations. Traces help
+investigate model inputs and outputs, tool execution, retrieval
+behaviour, latency, and failures.
 
-### 5. Verify Gemini and LangSmith
+### Custom metrics
 
-If you still have the standalone diagnostic script `test_llm.py`, you can run:
+The `/metrics` endpoint returns the custom in-memory metrics maintained
+by `app/monitoring.py`.
 
-```powershell
-python test_llm.py
+The metrics include request totals, success and failure counts, average
+request latency, returned-source counts, error counts, recent request
+history, and recorded stage timings.
+
+Metrics are process-local and reset when the API process restarts. They
+are not a replacement for a persistent metrics backend in a multi-worker
+deployment.
+
+## Evaluation
+
+### RAG evaluation
+
+Run the RAGAS evaluation script from the project root:
+
+``` powershell
+python -m evaluation.evaluate
 ```
 
-This script was used to verify Gemini generation and LangSmith tracing. It is optional and is not part of the current folder structure.
+The script uses the configured evaluation dataset, invokes the
+application, collects generated answers and retrieved contexts, and
+evaluates the configured RAGAS metrics.
 
----
+The current script configures context precision and context recall.
+Results should be interpreted in the context of the dataset size and
+evaluation configuration.
 
-## Running SentinelAI
+### Agent evaluation
 
-Run the following commands from the project root so Python can import the `app` package.
+Run the agent evaluator:
 
-### 1. Index the sample document
-
-```powershell
-python -m app.vector_store
+``` powershell
+python -m evaluation.agent_evaluator
 ```
 
-This invokes the indexing entry point in `app/vector_store.py`, which loads the sample document, splits it, and indexes it in ChromaDB.
+It runs the agentic evaluation examples and checks expected and
+forbidden tool usage using the current tool-tracking implementation.
 
-The first run may take longer because the local embedding model may need to be downloaded.
+## Tests
 
-### 2. Run the LangGraph workflow
+Run the pytest suite from the project root:
 
-```powershell
-python -m app.graph
-```
-
-The module's smoke test should execute a sample question, such as:
-
-> What happens when a user exceeds the API rate limit?
-
-The output should include the generated answer and source information.
-
-### 3. Ask a custom question
-
-You can call the workflow from a Python script or interactive session:
-
-```python
-from app.graph import answer_question
-
-result = answer_question(
-    "What is the default API request timeout?"
-)
-
-print(result["answer"])
-print(result["sources"])
-```
-
-The returned dictionary contains the question, answer, and sources.
-
-### 4. Run the standalone checks
-
-The current repository contains three standalone test scripts:
-
-```powershell
-python test_chroma.py
-python test_vector_store.py
-python test_retrieval.py
-```
-
-These are direct Python scripts, not necessarily pytest tests. Run them individually and check their assertions and output.
-
-The pytest suite will be expanded in a later stage.
-
----
-
-## Monitoring and Observability
-
-### LangSmith tracing
-
-LangSmith helps inspect individual workflow executions, including supported model calls and instrumented retrieval operations.
-
-Use traces to investigate:
-- Which retrieval operations executed.
-- Which passages were selected.
-- What context was sent to Gemini.
-- What answer Gemini returned.
-- The latency of traced operations.
-- Where an execution failed.
-
-Not every Python function is automatically traced as an independent span. Verify the retrieval instrumentation in your LangSmith project.
-
-### Request-level metrics
-
-`app/monitoring.py` records metrics in process memory.
-
-Tracked metrics include:
-
-```text
-total_requests
-successful_requests
-failed_requests
-average_latency_ms
-average_retrieved_chunks
-error_counts
-recent_requests
-```
-
-The request-tracking decorator measures elapsed time, records the outcome, and re-raises exceptions so callers can handle failures appropriately.
-
-For example, a deliberate invalid-input test should catch the expected `ValueError` before printing the metrics. Otherwise, the script may terminate before displaying the recorded result.
-
-### Current monitoring limitations
-
-- Metrics are lost when the process restarts.
-- Metrics are not shared across multiple workers.
-- Recent-request history is bounded.
-- Average latency does not capture p95 or p99 latency.
-- Monitoring metrics and LangSmith traces serve different purposes.
-
----
-
-## Evaluation Strategy — Upcoming Stage
-
-A RAG system can produce a fluent answer that is incorrect or unsupported. Evaluation will measure answer quality separately from application execution.
-
-### Evaluation dataset
-
-The planned `evaluation/dataset.json` will contain representative questions, expected answers, and relevant evidence or references.
-
-Include:
-- Questions answered directly by the knowledge base.
-- Questions requiring multiple pieces of evidence.
-- Ambiguous questions.
-- Questions whose answers are absent from the documents.
-- Questions containing irrelevant or misleading instructions.
-- Questions requiring source attribution.
-
-### RAGAS metrics
-
-The planned evaluation may use selected RAGAS metrics, such as:
-
-- **Faithfulness:** Whether answer claims are supported by the retrieved context.
-- **Answer relevancy:** Whether the answer addresses the question.
-- **Context precision:** Whether retrieved passages are relevant.
-- **Context recall:** Whether relevant evidence was retrieved, where reference evidence is available.
-
-The exact metrics and dependencies will be selected during implementation.
-
-### LLM-as-a-Judge evaluators
-
-The planned custom evaluators will assess:
-
-| Evaluator | Purpose |
-|---|---|
-| Correctness | Compares the answer with reference information or trusted evidence. |
-| Hallucination / faithfulness | Flags unsupported claims. |
-| Answer relevance | Checks whether the question was answered. |
-| Conciseness | Checks for unnecessary detail. |
-| Assertion support | Checks whether important claims have evidence. |
-| PII leakage | Flags potentially sensitive information in output. |
-| Prompt-injection resistance | Tests whether untrusted instructions influence the answer improperly. |
-| Code-injection resistance | Tests responses to unsafe code-oriented instructions. |
-
-These checks are planned, not yet verified. LLM judges can make mistakes and should be tested against known examples. They do not replace security controls.
-
-Evaluations should run offline against a fixed dataset rather than on the critical path of every user request.
-
----
-
-## Testing — Upcoming Stage
-
-The current repository has standalone scripts for ChromaDB, vector storage, and retrieval. Broader automated testing will be added with pytest.
-
-Planned test coverage includes:
-
-### Ingestion
-- Missing file.
-- Empty file.
-- Valid document splitting.
-- Chunk metadata preservation.
-
-### Vector storage
-- Indexing and searching.
-- Re-indexing unchanged content.
-- Updating documents without stale chunks.
-- Deleting a document.
-
-### Retrieval
-- Dense retrieval returns relevant candidates.
-- BM25 retrieves exact keyword matches.
-- RRF combines and deduplicates rankings.
-- Reranking sorts a known test case correctly.
-- Empty queries and invalid parameters raise expected errors.
-
-### RAG workflow
-- Supported questions return answers with sources.
-- Missing evidence produces an insufficient-evidence response.
-- Invalid input is rejected.
-- Retrieval and model failures are recorded and propagated.
-
-### Monitoring
-- Success and failure counters update correctly.
-- Latency is recorded.
-- Error counts use the expected exception type.
-- Recent history remains bounded.
-- Resetting metrics clears accumulated values.
-
-Once pytest tests have been added, run:
-
-```powershell
+``` powershell
 python -m pytest -v
 ```
 
-Unit tests should use mocks where practical. Keep a small number of integration tests for real embedding and Gemini calls.
-
----
+The repository also contains standalone diagnostic scripts for ChromaDB,
+vector storage, or retrieval where present. Run those individually when
+debugging the corresponding component.
 
 ## Environment Variables
 
-| Variable | Purpose |
-|---|---|
-| `GOOGLE_API_KEY` | Authenticates Gemini API requests. |
-| `LANGSMITH_API_KEY` | Authenticates LangSmith. |
-| `LANGSMITH_TRACING` | Enables or disables tracing. |
-| `LANGSMITH_PROJECT` | Names the LangSmith project. |
+  Variable              Purpose
+  --------------------- ---------------------------------------------------
+  `GOOGLE_API_KEY`      Authenticates Gemini API requests.
+  `GOOGLE_MODEL`        Selects the Gemini model used by the application.
+  `LANGSMITH_API_KEY`   Authenticates LangSmith.
+  `LANGSMITH_TRACING`   Enables or disables LangSmith tracing.
+  `LANGSMITH_PROJECT`   Sets the LangSmith project name.
 
-Load secrets through environment variables rather than hard-coding them in Python files.
+Load credentials through environment variables. Never hard-code secrets
+in Python files or commit them to the repository.
 
 ## Current Limitations
 
-SentinelAI is a prototype, not a production-ready service.
+SentinelAI is a working development project, not a production-hardened
+service.
 
-1. **Local knowledge base:** The current example uses a local text document.
-2. **Retrieval tuning:** Chunk size, candidate counts, and reranking require evaluation.
-3. **CPU inference:** Local embeddings and CrossEncoder reranking can add latency.
-4. **External LLM dependency:** Gemini requires network access, valid credentials, and available quota.
-5. **In-memory monitoring:** Metrics reset on restart and are not shared across workers.
-6. **Process-local locks:** Locks do not coordinate operations across separate processes.
-7. **Limited security validation:** Prompt-injection and PII tests do not guarantee security.
-8. **No completed evaluation baseline:** Accuracy or quality improvements should not be claimed until measured.
-9. **Limited formats:** PDF, DOCX, and other formats require additional loaders and tests.
-10. **No API or UI yet:** FastAPI and Streamlit integration remain future work.
-
----
-
-## Upcoming Development Roadmap
-
-### Stage 3 — FastAPI and Streamlit
-- Add `app/main.py` with FastAPI endpoints.
-- Validate incoming requests and handle errors consistently.
-- Connect the API to the existing `answer_question()` function.
-- Add `ui.py` with a Streamlit chat interface.
-- Display answers and source passages.
-- Expose basic monitoring metrics.
-- Test the full UI-to-API-to-RAG flow.
-
-Expected run commands once implemented:
-
-```powershell
-uvicorn app.main:app --reload
-```
-
-FastAPI documentation:
-
-```text
-http://127.0.0.1:8000/docs
-```
-
-Streamlit:
-
-```powershell
-streamlit run ui.py
-```
-
-These commands are not expected to work until the corresponding files and application objects exist.
-
-### Stage 4 — Evaluation and Quality Measurement
-- Create an evaluation dataset.
-- Implement selected RAGAS metrics.
-- Add custom LLM-as-a-Judge evaluators.
-- Evaluate correctness, faithfulness, relevance, conciseness, and selected security behaviors.
-- Record baseline results.
-- Use evaluation findings to tune retrieval and prompts.
-
-### Stage 5 — Automated Testing
-- Expand pytest coverage.
-- Add regression tests for representative questions.
-- Mock external services in unit tests.
-- Add integration tests for the complete pipeline.
-- Test error handling, re-indexing, and monitoring behavior.
-
-### Stage 6 — Monitoring and Reliability
-- Expose metrics through the API or UI.
-- Add latency percentiles and clearer error summaries.
-- Improve logging and failure handling.
-- Document reproducible setup and test commands.
-- Capture example traces and evaluation results.
-
-### Stage 7 — Optional Production Hardening
-- Support additional document formats.
-- Add authentication and authorization if required.
-- Improve concurrency and indexing consistency.
-- Add rate limiting, request-size limits, and timeouts.
-- Establish latency and retrieval-quality targets.
-- Add CI checks for tests and evaluation regressions.
-
----
+-   **In-memory BM25 cache:** The BM25 retriever is process-local and
+    must be refreshed from the indexed corpus when the application
+    starts or the corpus changes.
+-   **In-memory monitoring:** Custom metrics reset on restart and are
+    not shared across multiple workers.
+-   **Local inference overhead:** Embedding and CrossEncoder models run
+    locally and can add CPU and memory overhead.
+-   **External model dependency:** Gemini calls require network access,
+    valid credentials, and available API quota.
+-   **External search limitations:** Web search returns search-result
+    information and snippets; the current implementation does not
+    independently fetch and verify the full content of every result.
+-   **Evaluation dataset size:** The current datasets are
+    development-oriented and should be expanded before making broad
+    quality or reliability claims.
+-   **Agent evaluation tracking:** Document retrieval usage is inferred
+    from the planner's decision, while external tool usage is extracted
+    from tool messages. This is not yet a complete audit of every
+    executed graph node or tool call.
+-   **Process-local synchronization:** Python locks protect shared state
+    within one process but do not coordinate multiple worker processes.
+-   **Security:** Input validation and restricted calculator evaluation
+    are useful safeguards, but they do not replace authentication,
+    authorization, rate limiting, comprehensive file validation, or
+    prompt-injection testing.
+-   **Retrieval tuning:** Chunk sizes, candidate counts, and model
+    choices are configuration values that should be validated against a
+    larger representative evaluation set.
 
 ## Security Considerations
 
-RAG does not guarantee correctness or security.
-
-- Never commit credentials or sensitive documents.
-- Treat retrieved passages as untrusted data.
-- Do not allow document instructions to override the intended system behavior.
-- Validate API inputs and impose request-size limits.
-- Avoid logging secrets or sensitive user content.
-- Treat LLM-based security evaluations as advisory checks.
-- Add authentication, authorization, and rate limiting before exposing sensitive data or a public service.
+-   Never commit `.env`, API keys, or sensitive documents.
+-   Treat uploaded documents and retrieved passages as untrusted
+    content.
+-   Do not allow instructions found inside retrieved documents or search
+    results to override system instructions.
+-   Validate incoming API inputs and restrict upload sizes and supported
+    file types.
+-   Avoid logging credentials or sensitive user information.
+-   Treat LLM-based evaluations as advisory rather than as security
+    guarantees.
+-   Add authentication, authorization, and rate limiting before exposing
+    private document collections to multiple users or the public
+    internet.
 
 ## Project Goal
 
-SentinelAI demonstrates an end-to-end RAG engineering workflow: ingest documents, retrieve and rerank evidence, generate grounded answers, inspect execution traces, measure request behavior, and evaluate answer quality.
+SentinelAI brings together document ingestion, hybrid retrieval,
+reranking, evidence assessment, agentic tool use, grounded answer
+generation, tracing, monitoring, and evaluation in one application.
 
-The focus is not merely on generating answers, but on building a pipeline that is **observable, testable, and measurable**.
+Its focus is not only on generating answers, but also on making the
+retrieval and reasoning workflow inspectable and measurable.

@@ -7,8 +7,10 @@ from .graph import answer_question
 import logging
 import os
 import uuid
+import time
 from .monitoring import get_metrics
 from .retrieval import refresh_bm25_cache
+import requests
 
 app = FastAPI(title="SentinelAI API")
 logger = logging.getLogger(__name__)
@@ -20,7 +22,6 @@ def initialize_document_index():
 
     # Synchronize files with Chroma on application startup.
     index_directory(DOCUMENT_PATH.parent)
-    refresh_bm25_cache()
     # Load the indexed chunks into the BM25 cache.
     count = refresh_bm25_cache()
 
@@ -181,31 +182,58 @@ def remove_document(filename: str):
 
     return {"message": f"Deleted {safe_name} and its indexed chunks."}
 
-@app.post("/ask",response_model=AskResponse)
+@app.post("/ask", response_model=AskResponse)
 def ask(request: AskRequest):
+
+    start = time.perf_counter()
+
+    logger.info(
+        "Received question: %s",
+        request.question[:200],
+    )
+
     try:
         result = answer_question(request.question)
+
+        elapsed = time.perf_counter() - start
+
+        logger.info(
+            "Question answered successfully in %.2f seconds",
+            elapsed,
+        )
 
         return {
             "question": result["question"],
             "answer": result["answer"],
             "sources": result["sources"],
         }
+
     except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
+        raise HTTPException(
+            status_code=400,
+            detail=str(exc),
+        )
+
     except Exception:
-        logger.exception("SentinelAI failed while answering a question")
+        logger.exception(
+            "SentinelAI failed while answering the question"
+        )
+
         raise HTTPException(
             status_code=500,
             detail="Unable to answer the question. Check the server logs.",
         )
+    except requests.exceptions.ReadTimeout:
+        st.error(
+            "SentinelAI is taking longer than expected to respond. "
+            "Check the FastAPI terminal for the current processing stage."
+        )
 
-# def ask(request: AskRequest):
-#     try:
-#         ans=answer_question(request.question)['answer'][0]['text'] if answer_question(request.question)['answer'][0] and isinstance(answer_question(request.question)['answer'][0], dict) else answer_question(request.question)
-#         return ans
-#     except ValueError as exc:
-#         raise HTTPException(status_code=400, detail=str(exc))
-#     except Exception:
-#         logger.exception("SentinelAI failed while answering a question")
-#         raise HTTPException(status_code=500, detail="Unable to answer the question.")
+    except requests.exceptions.ConnectionError:
+        st.error(
+            "Could not connect to SentinelAI API. "
+            "Check whether FastAPI is running."
+        )
+
+    except requests.RequestException as exc:
+        st.error(f"API request failed: {exc}")

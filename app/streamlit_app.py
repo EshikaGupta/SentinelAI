@@ -108,7 +108,7 @@ if question:
                 response = requests.post(
                     f"{API_URL}/ask",
                     json={"question": question},
-                    timeout=120,
+                    timeout=(10, 300),
                 )
                 response.raise_for_status()
                 result = response.json()
